@@ -20,11 +20,6 @@ Source: tag [`sepolia-2026-10-07`](https://github.com/Lucyd-trade/contracts/tree
 | AutoRedeemer | [`0x42Bf669f0A3DCc95510001Ddbc43D56FdE67268F`](https://sepolia.etherscan.io/address/0x42Bf669f0A3DCc95510001Ddbc43D56FdE67268F) |
 
 External: USDC `0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238`, Pyth `0xBb86bCc951A62DF86826219d9251Ee05F2c1e286`.
-
-### Ethereum mainnet
-
-Not deployed yet.
-
 ## How a market works
 
 1. **Create.** `MarketFactory` creates a market for a period (5m, 15m, 30m, 1h, 4h, 1d) and registers it in `ConditionalTokens`. The resolver of a market is fixed at creation. The strike (the Pyth BTC/USD price at the start of the market) is set once by the market creator when the market opens and cannot be changed afterwards.
