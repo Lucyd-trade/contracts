@@ -1,0 +1,18 @@
+{
+  "network": "sepolia",
+  "chainId": 11155111,
+  "testnet": true,
+  "deployedAt": "2026-10-07",
+  "sourceTag": "sepolia-2026-10-07",
+  "contracts": {
+    "ConditionalTokens": { "address": "0xB62eFc43C16b4E2Bf1aAAD33002368e55708538D", "block": 11863907 },
+    "MarketFactory": { "address": "0xe4DC0a7c6eaa2ae66FdDe61e1882749430F7aAbd", "block": 11863908 },
+    "PriceResolver": { "address": "0xe051D7D72DEb54F934F5DFa0846779232e7265dD", "block": 11863909 },
+    "AutoRedeemer": { "address": "0x42Bf669f0A3DCc95510001Ddbc43D56FdE67268F", "block": 11863921 }
+  },
+  "external": {
+    "USDC": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+    "Pyth": "0xBb86bCc951A62DF86826219d9251Ee05F2c1e286",
+    "PythFeedBTCUSD": "0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43"
+  }
+}

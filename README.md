@@ -2,7 +2,15 @@
 
 Smart contracts behind [Lucyd](https://testnet.lucyd.trade): binary UpDown markets on the BTC/USD price, settled by the Pyth oracle.
 
-## Deployed (Sepolia testnet)
+## Deployments
+
+Each deployment has its own file in [`deployments/`](deployments) and a git tag with the exact source code at those addresses. `main` may be ahead of what is deployed.
+
+### Sepolia testnet
+
+> Testnet only: test USDC, no real funds.
+
+Source: tag [`sepolia-2026-10-07`](https://github.com/Lucyd-trade/contracts/tree/sepolia-2026-10-07), addresses: [`deployments/sepolia.json`](deployments/sepolia.json).
 
 | Contract | Address |
 |---|---|
@@ -12,6 +20,10 @@ Smart contracts behind [Lucyd](https://testnet.lucyd.trade): binary UpDown marke
 | AutoRedeemer | [`0x42Bf669f0A3DCc95510001Ddbc43D56FdE67268F`](https://sepolia.etherscan.io/address/0x42Bf669f0A3DCc95510001Ddbc43D56FdE67268F) |
 
 External: USDC `0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238`, Pyth `0xBb86bCc951A62DF86826219d9251Ee05F2c1e286`.
+
+### Ethereum mainnet
+
+Not deployed yet.
 
 ## How a market works
 
