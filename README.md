@@ -18,6 +18,7 @@ Source: tag [`sepolia-2026-10-07`](https://github.com/Lucyd-trade/contracts/tree
 | MarketFactory | [`0xe4DC0a7c6eaa2ae66FdDe61e1882749430F7aAbd`](https://sepolia.etherscan.io/address/0xe4DC0a7c6eaa2ae66FdDe61e1882749430F7aAbd) |
 | PriceResolver | [`0xe051D7D72DEb54F934F5DFa0846779232e7265dD`](https://sepolia.etherscan.io/address/0xe051D7D72DEb54F934F5DFa0846779232e7265dD) |
 | AutoRedeemer | [`0x42Bf669f0A3DCc95510001Ddbc43D56FdE67268F`](https://sepolia.etherscan.io/address/0x42Bf669f0A3DCc95510001Ddbc43D56FdE67268F) |
+| PartnerProgram (deployed 2026-10-13, source `src/PartnerProgram.sol` on `main`) | [`0xf1552eEBe261c0438a31DcbC39c57d31Fa7b0A25`](https://sepolia.etherscan.io/address/0xf1552eEBe261c0438a31DcbC39c57d31Fa7b0A25) |
 
 External: USDC `0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238`, Pyth `0xBb86bCc951A62DF86826219d9251Ee05F2c1e286`.
 ## How a market works
@@ -46,6 +47,14 @@ The owner cannot:
 - settle a market at a price other than the one published by Pyth.
 
 `AutoRedeemer` has no admin at all.
+
+## Partner program
+
+`PartnerProgram` records partners, the traders bound to them and the daily USDC payouts. Partners earn 0.1% of the volume their traders take from the Lucyd market maker; the amounts are computed off chain and can be re-checked with [`verify/verify-partner.mjs`](verify/verify-partner.mjs), which reads only the chain.
+
+- The **operator** (a server key) adds partners, binds traders and pays: at most once per day (`dayPaid`), only to partners, never for a future day.
+- A binding is permanent: no function changes or removes it.
+- The **treasury** withdraws USDC and replaces the operator. The contract holds about a week of payouts, so a leaked operator key can lose at most that balance.
 
 ## Build and test
 
