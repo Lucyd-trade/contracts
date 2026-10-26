@@ -19,6 +19,7 @@ Source: tag [`sepolia-2026-10-07`](https://github.com/Lucyd-trade/contracts/tree
 | PriceResolver | [`0xe051D7D72DEb54F934F5DFa0846779232e7265dD`](https://sepolia.etherscan.io/address/0xe051D7D72DEb54F934F5DFa0846779232e7265dD) |
 | AutoRedeemer | [`0x42Bf669f0A3DCc95510001Ddbc43D56FdE67268F`](https://sepolia.etherscan.io/address/0x42Bf669f0A3DCc95510001Ddbc43D56FdE67268F) |
 | PartnerProgram (deployed 2026-10-13, source `src/PartnerProgram.sol` on `main`) | [`0xf1552eEBe261c0438a31DcbC39c57d31Fa7b0A25`](https://sepolia.etherscan.io/address/0xf1552eEBe261c0438a31DcbC39c57d31Fa7b0A25) |
+| ScoutProgram (deployed 2026-10-26, source `src/ScoutProgram.sol` on `main`) | [`0x03d75C08db918065DCdb86fcB813Fe2b5d619F27`](https://sepolia.etherscan.io/address/0x03d75C08db918065DCdb86fcB813Fe2b5d619F27) |
 
 External: USDC `0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238`, Pyth `0xBb86bCc951A62DF86826219d9251Ee05F2c1e286`.
 ## How a market works
@@ -50,11 +51,21 @@ The owner cannot:
 
 ## Partner program
 
-`PartnerProgram` records partners, the traders bound to them and the daily USDC payouts. Partners earn 0.1% of the volume their traders take from the Lucyd market maker; the amounts are computed off chain and can be re-checked with [`verify/verify-partner.mjs`](verify/verify-partner.mjs), which reads only the chain.
+`PartnerProgram` records partners, the traders bound to them and the daily USDC payouts. Partners earn a share of the trading volume their traders take; the amounts are computed off chain and can be re-checked with [`verify/verify-partner.mjs`](verify/verify-partner.mjs), which reads only the chain.
 
 - The **operator** (a server key) adds partners, binds traders and pays: at most once per day (`dayPaid`), only to partners, never for a future day.
 - A binding is permanent: no function changes or removes it.
 - The **treasury** withdraws USDC and replaces the operator. The contract holds about a week of payouts, so a leaked operator key can lose at most that balance.
+
+`PartnerProgram` also pays builders: apps and bots that put their builder code into the salt of the orders they send. A builder's earnings can be re-checked with [`verify/verify-builder.mjs`](verify/verify-builder.mjs).
+
+## Scout program
+
+`ScoutProgram` records scouts, the partners bound to them and the daily USDC payouts to scouts. A scout earns a share of what their partners are paid by `PartnerProgram`: 50% for the first 180 days after a partner is bound, 10% after. The amounts are computed off chain from `PartnerProgram` `Paid` events and can be re-checked with [`verify/verify-scout.mjs`](verify/verify-scout.mjs), which reads only the chain.
+
+- The **operator** (the same server key as in `PartnerProgram`) adds scouts, binds partners and pays: at most once per day, only to scouts with at least `MIN_PARTNERS` (2) bound partners.
+- A binding is permanent: no function changes or removes it.
+- The **treasury** withdraws USDC and replaces the operator. The contract holds about a week of payouts.
 
 ## Build and test
 
@@ -66,7 +77,7 @@ cd contracts
 forge test
 ```
 
-Deployment: `script/DeployAll.s.sol` (see the header of the file for the environment variables).
+Deployment: `script/DeployAll.s.sol`, `script/DeployPartnerProgram.s.sol`, `script/DeployScoutProgram.s.sol` (see the header of each file for the environment variables).
 
 ## License
 

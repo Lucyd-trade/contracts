@@ -7,9 +7,12 @@
 // For every UTC day in the range it takes the traders bound to the partner (PartnerProgram
 // TraderBound events), the Exchange fills of that day (OrdersMatched + the matchOrders calldata,
 // whose signed orders give taker, maker and amounts), keeps fills where a bound trader is the taker
-// (bound in an earlier block) and the market maker is the maker, and computes
+// (bound in an earlier block), whoever the maker is, and computes
 //   volume  = USDC the taker paid on a buy / received on a sell
 //   accrued = floor(sum(volume) * rate)
+// where rate is the larger of the partner's own rate (--rate) and the volume tier of the day's
+// calendar month (UTC), set by the same counted volume over the month before (TIERS below; the
+// script recomputes that month from chain too, so the first day of a range in a new month is slow).
 // Then it lists the partner's Paid events. Accrued minus paid is the balance still due (paid out
 // once it reaches $10). With --report it also compares each day with the public daily report.
 //
@@ -17,8 +20,7 @@
 //   --rpc <url>          Sepolia JSON-RPC (an archive-capable node for older days)
 //   --program <address>  PartnerProgram
 //   --exchange <address> Exchange (ClobSettlement)
-//   --mm <a,b>           market maker wallets
-//   --rate <fraction>    partner rate, default 0.001 (0.1%)
+//   --rate <fraction>    partner's own rate, default 0.005 (0.5%); a volume tier above it wins
 //   --start-block <n>    PartnerProgram deploy block
 //   --report             also fetch https://data.testnet.lucyd.trade/partners/reports/<day>.json
 
@@ -31,12 +33,14 @@ const DEFAULTS = {
   rpc: 'https://ethereum-sepolia-rpc.publicnode.com',
   program: '0xf1552eEBe261c0438a31DcbC39c57d31Fa7b0A25',
   exchange: '0x6588c789c6b6df8f8b6b92e6433f813cc2d1d4d0',
-  mm: '0x2c2b35ff4055522a7bf228efb07540d6c8f73744',
-  rate: '0.001',
+  rate: '0.005',
   'start-block': '11906089',
   reports: 'https://data.testnet.lucyd.trade/partners/reports',
 }
 const CHUNK = 1000n
+/** Volume tiers, highest first: counted volume last month from (USDC base units) → rate, ppm. */
+const TIERS = [[250_000_000_000n, 10000n], [50_000_000_000n, 7000n], [10_000_000_000n, 6000n]]
+const tierPpm = (prev) => TIERS.find(([from]) => prev >= from)?.[1] ?? 0n
 
 function args() {
   const out = { ...DEFAULTS }
@@ -111,7 +115,6 @@ async function main() {
   const client = createPublicClient({ chain: sepolia, transport: http(o.rpc) })
   const partner = getAddress(o.partner)
   const exchange = getAddress(o.exchange)
-  const mm = new Set(o.mm.split(',').map((a) => a.trim().toLowerCase()))
   const ratePpm = BigInt(Math.round(Number(o.rate) * 1_000_000))
   const chainId = await client.getChainId()
   const domain = { name: 'Exchange', version: '1', chainId, verifyingContract: exchange }
@@ -139,8 +142,8 @@ async function main() {
     return txCache.get(hash)
   }
 
-  let totalAccrued = 0n
-  for (let d = dayNumber(o.from); d <= dayNumber(o.to); d++) {
+  /** Counted fills of UTC day `d`: volume and count; `print` lists each fill. */
+  async function dayVolume(d, print) {
     const from = await blockAt(client, d * 86400, head)
     const to = (await blockAt(client, (d + 1) * 86400, head)) - 1n
     const logs = from <= to ? await logsInChunks(client, { address: exchange, event: ORDERS_MATCHED }, from, to) : []
@@ -154,16 +157,40 @@ async function main() {
       const trader = found.taker.maker.toLowerCase()
       const boundAt = traders.get(trader)
       if (boundAt === undefined || boundAt >= log.blockNumber) continue
-      if (!mm.has(found.maker.maker.toLowerCase())) continue
       const fill = log.args.fill
       const v = found.taker.side === 0 ? fill.takerAmount : fill.takerReceiveAmount
       volume += v
       count++
-      console.log(`  ${dayString(d)} ${log.transactionHash}#${log.logIndex} trader ${trader} ${found.taker.side === 0 ? 'buy ' : 'sell'} ${usd(v)} USDC`)
+      if (print) console.log(`  ${dayString(d)} ${log.transactionHash}#${log.logIndex} trader ${trader} ${found.taker.side === 0 ? 'buy ' : 'sell'} ${usd(v)} USDC`)
     }
-    const accrued = volume * ratePpm / 1_000_000n
+    return { volume, count }
+  }
+
+  // Tier of a calendar month from the volume of the month before (days before the deploy count 0)
+  const startDay = Math.floor(Number((await client.getBlock({ blockNumber: BigInt(o['start-block']) })).timestamp) / 86400)
+  const tiers = new Map()
+  async function monthRate(d) {
+    const date = new Date(d * 86_400_000)
+    const first = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1) / 86_400_000
+    if (!tiers.has(first)) {
+      const prevFirst = Date.UTC(date.getUTCFullYear(), date.getUTCMonth() - 1, 1) / 86_400_000
+      let prev = 0n
+      for (let x = Math.max(prevFirst, startDay); x < first; x++) prev += (await dayVolume(x, false)).volume
+      const tier = tierPpm(prev)
+      console.log(`${dayString(first).slice(0, 7)}: volume last month ${usd(prev)} USDC → tier ${Number(tier) / 10_000}%`)
+      tiers.set(first, tier)
+    }
+    const tier = tiers.get(first)
+    return tier > ratePpm ? tier : ratePpm
+  }
+
+  let totalAccrued = 0n
+  for (let d = dayNumber(o.from); d <= dayNumber(o.to); d++) {
+    const rate = await monthRate(d)
+    const { volume, count } = await dayVolume(d, true)
+    const accrued = volume * rate / 1_000_000n
     totalAccrued += accrued
-    let line = `${dayString(d)}: ${count} fill(s), volume ${usd(volume)} USDC, accrued ${usd(accrued)} USDC`
+    let line = `${dayString(d)}: ${count} fill(s), volume ${usd(volume)} USDC, rate ${Number(rate) / 10_000}%, accrued ${usd(accrued)} USDC`
     if (o.report) {
       const res = await fetch(`${o.reports}/${dayString(d)}.json`)
       if (res.ok) {

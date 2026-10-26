@@ -5,7 +5,7 @@ import "./IERC20.sol";
 
 /// Partner (affiliate) program: partners, the traders they brought, and daily USDC payouts.
 ///
-/// Partners earn a share of the volume their traders take from the market maker. The share is
+/// Partners earn a share of the trading volume their traders take. The share is
 /// computed off chain from Exchange fills (the formula and a script to re-check it are published);
 /// this contract keeps the public record a partner can verify against: who is a partner, which
 /// trader is bound to whom and since which block, and what was paid for which day.

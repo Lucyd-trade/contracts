@@ -9,7 +9,8 @@
     "MarketFactory": { "address": "0xe4DC0a7c6eaa2ae66FdDe61e1882749430F7aAbd", "block": 11863908 },
     "PriceResolver": { "address": "0xe051D7D72DEb54F934F5DFa0846779232e7265dD", "block": 11863909 },
     "AutoRedeemer": { "address": "0x42Bf669f0A3DCc95510001Ddbc43D56FdE67268F", "block": 11863921 },
-    "PartnerProgram": { "address": "0xf1552eEBe261c0438a31DcbC39c57d31Fa7b0A25", "block": 11906089, "deployedAt": "2026-10-13" }
+    "PartnerProgram": { "address": "0xf1552eEBe261c0438a31DcbC39c57d31Fa7b0A25", "block": 11906089, "deployedAt": "2026-10-13" },
+    "ScoutProgram": { "address": "0x03d75C08db918065DCdb86fcB813Fe2b5d619F27", "block": 11998967, "deployedAt": "2026-10-26" }
   },
   "external": {
     "USDC": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",

@@ -4,5 +4,19 @@ out = "out"
 libs = ["lib"]
 evm_version = "paris"
 
+# Exchange (ClobSettlement and its parts) is built as in its own repo: solc 0.8.30, cancun, via-IR, optimizer 200.
+[[profile.default.additional_compiler_profiles]]
+name = "exchange"
+evm_version = "cancun"
+via_ir = true
+optimizer = true
+optimizer_runs = 200
+
+[[profile.default.compilation_restrictions]]
+paths = "src/{ClobSettlement,SettlementMatching,SettlementOrderHashing}.sol"
+min_evm_version = "cancun"
+via_ir = true
+min_optimizer_runs = 200
+
 [rpc_endpoints]
 sepolia = "${RPC_URL}"
